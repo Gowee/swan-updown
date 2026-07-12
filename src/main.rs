@@ -35,6 +35,10 @@ struct SwanUpdown {
     /// Optional master device to assign interfaces to
     #[arg(short, long, value_name = "master")]
     master: Option<String>,
+    // needed by [interface],
+    /// Optional MTU to set on the created interfaces
+    #[arg(long, value_name = "mtu")]
+    mtu: Option<u32>,
 
     // needed by [babeld],
     /// The path of the babeld socket
@@ -129,6 +133,7 @@ async fn main2() -> Result<(), Error> {
             conn_if_id,
             &alt_names,
             args.master,
+            args.mtu,
         )
         .boxed(),
     );

@@ -12,19 +12,34 @@ pub async fn interface_updown(
     conn_if_id: u32,
     alt_names: &[&str],
     master_dev: Option<String>,
+    mtu: Option<u32>,
 ) -> Result<(), Error> {
     // process by PLUTO_VERB
     if trigger.starts_with("up-client") {
         match interface::get_in_netns(netns.clone(), interface_name.clone(), conn_if_id).await {
             Ok(()) => Ok(()),
             Err(GetResults::NotFound) => {
-                interface::add_to_netns(netns, interface_name, conn_if_id, alt_names, master_dev)
-                    .await
+                interface::add_to_netns(
+                    netns,
+                    interface_name,
+                    conn_if_id,
+                    alt_names,
+                    master_dev,
+                    mtu,
+                )
+                .await
             }
             Err(_) => {
                 interface::del_in_netns(netns.clone(), interface_name.clone()).await?;
-                interface::add_to_netns(netns, interface_name, conn_if_id, alt_names, master_dev)
-                    .await
+                interface::add_to_netns(
+                    netns,
+                    interface_name,
+                    conn_if_id,
+                    alt_names,
+                    master_dev,
+                    mtu,
+                )
+                .await
             }
         }
     } else if trigger.starts_with("down-client") {

@@ -34,6 +34,7 @@ async fn new_xfrm(
     if_id: u32,
     alt_names: &[&str],
     master_dev: Option<String>,
+    mtu: Option<u32>,
 ) -> Result<(), Error> {
     info!(
         "adding new xfrm interface {}, if_id {}, altname {:#?}",
@@ -69,15 +70,16 @@ async fn new_xfrm(
     // get the idx of the master device
     let master_devidx = misc::get_index_by_name(&mut handle, master_dev).await?;
     // bring the interface up after creation
-    if let Err(e) = handle
+    let mut req = handle
         .link()
         .set(0)
         .name(interface.clone())
         .up()
-        .controller(master_devidx)
-        .execute()
-        .await
-    {
+        .controller(master_devidx);
+    if let Some(mtu_val) = mtu {
+        req = req.mtu(mtu_val);
+    }
+    if let Err(e) = req.execute().await {
         error!(
             "Failed to bring interface {} up: {}, deleting it...",
             interface, e
@@ -199,11 +201,12 @@ pub async fn add_to_netns(
     if_id: u32,
     alt_names: &[&str],
     master_dev: Option<String>,
+    mtu: Option<u32>,
 ) -> Result<(), Error> {
     match netns_name {
-        None => new_xfrm(interface, if_id, alt_names, master_dev).await,
+        None => new_xfrm(interface, if_id, alt_names, master_dev, mtu).await,
         Some(my_netns_name) => {
-            new_xfrm(interface.clone(), if_id, alt_names, master_dev).await?;
+            new_xfrm(interface.clone(), if_id, alt_names, master_dev, mtu).await?;
             match move_to_netns(&interface, &my_netns_name).await {
                 Ok(()) => Ok(()),
                 Err(e) => {
